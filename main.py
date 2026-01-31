@@ -24,23 +24,22 @@ HTML_TEMPLATE = """
     <style>
         [x-cloak] { display: none !important; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .glass { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .card-gradient { background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
-        .text-shadow { text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-        
-        /* HAPUS CSS YANG MENYEMBUNYIKAN KONTROL VIDEO */
-        /* video::-webkit-media-controls { display:none !important; } <-- INI DIHAPUS */
-        
-        /* Agar native control tidak tertutup tombol next/prev */
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .card-gradient { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 40%, transparent 100%); }
+        .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
         video { outline: none; }
+        .animate-enter { animation: enter 0.4s ease-out; }
+        @keyframes enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Transisi Smooth untuk Player Controls */
+        .fade-transition { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-[#020617] text-slate-200 font-sans selection:bg-blue-600 selection:text-white" x-data="albedoApp()" x-init="init()">
 
     <nav class="fixed top-0 w-full z-50 glass transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
-            <div @click="resetHome()" class="flex items-center gap-2 cursor-pointer group flex-shrink-0">
-                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:rotate-6 transition">
+            <div @click="view = 'home'; window.scrollTo(0,0)" class="flex items-center gap-2 cursor-pointer group flex-shrink-0">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:rotate-12 transition">
                     <span class="font-black text-white italic text-sm">A</span>
                 </div>
                 <h1 class="text-sm md:text-lg font-black tracking-tighter text-white">
@@ -53,6 +52,7 @@ HTML_TEMPLATE = """
                     <i class="fa-solid fa-heart text-lg"></i>
                     <span x-show="favorites.length > 0" class="absolute top-0 right-0 w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
                 </button>
+
                 <div class="relative w-32 md:w-64 transition-all focus-within:w-40 md:focus-within:w-72">
                     <input type="text" x-model="searchQuery" @keyup.enter="doSearch(true)" placeholder="Cari..." 
                            class="w-full bg-[#0f172a] text-xs py-2 pl-3 pr-8 rounded-full border border-white/10 focus:border-blue-500 outline-none text-white placeholder-slate-600 transition shadow-inner">
@@ -71,18 +71,18 @@ HTML_TEMPLATE = """
         </template>
     </div>
 
-    <div x-show="loading" class="fixed inset-0 bg-[#020617]/90 z-[9999] flex flex-col items-center justify-center">
-        <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-        <p class="text-[10px] font-bold text-blue-500 tracking-widest animate-pulse">MEMUAT...</p>
-    </div>
+    <main class="max-w-7xl mx-auto px-4 pt-24 pb-24 min-h-screen">
 
-    <main class="max-w-7xl mx-auto px-4 pt-20 pb-24 min-h-screen">
+        <div x-show="loading" class="fixed inset-0 bg-[#020617]/90 z-[9999] flex flex-col items-center justify-center">
+            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p class="text-[10px] font-bold text-blue-500 tracking-widest animate-pulse">MEMUAT...</p>
+        </div>
 
         <template x-if="view === 'home'">
             <div class="space-y-12 animate-enter">
                 
                 <template x-if="trending.length > 0">
-                    <div class="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl group cursor-pointer border border-white/5 mt-4" @click="openDetail(trending[0].id)">
+                    <div class="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden shadow-2xl group cursor-pointer border border-white/5" @click="openDetail(trending[0].id)">
                         <img :src="trending[0].cover" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition duration-1000">
                         <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent"></div>
                         <div class="absolute bottom-0 left-0 p-6 md:p-10 w-full md:w-2/3">
@@ -114,9 +114,7 @@ HTML_TEMPLATE = """
                                     <div class="absolute inset-0 card-gradient"></div>
                                     
                                     <div class="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
-                                        <template x-if="item.is18"><span class="bg-red-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">18+</span></template>
-                                        <template x-if="item.isFinished"><span class="bg-green-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">TAMAT</span></template>
-                                        <template x-if="!item.isFinished"><span class="bg-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">ONGOING</span></template>
+                                        <template x-if="item.is18"><span class="bg-red-600/90 backdrop-blur text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-lg border border-red-500/30">18+</span></template>
                                     </div>
                                     <div class="absolute top-1.5 left-1.5">
                                         <span class="bg-black/60 backdrop-blur text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-white/10" x-text="item.totalEps + ' Eps'"></span>
@@ -131,7 +129,9 @@ HTML_TEMPLATE = """
                         </template>
                     </div>
                     <div class="text-center mt-8" x-show="trendingHasMore">
-                        <button @click="loadMoreTrending()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-8 rounded-full transition">MUAT LAGI</button>
+                        <button @click="loadMoreTrending()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-8 rounded-full transition">
+                            MUAT LAGI
+                        </button>
                     </div>
                 </section>
 
@@ -145,14 +145,14 @@ HTML_TEMPLATE = """
                                 <div @click="openDetail(item.id)" class="relative aspect-[3/4.5]">
                                     <img :src="item.cover" class="w-full h-full object-cover">
                                     <div class="absolute inset-0 card-gradient"></div>
+                                    
                                     <div class="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
                                         <template x-if="item.is18"><span class="bg-red-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">18+</span></template>
-                                        <template x-if="item.isFinished"><span class="bg-green-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">TAMAT</span></template>
-                                        <template x-if="!item.isFinished"><span class="bg-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">ONGOING</span></template>
                                     </div>
                                     <div class="absolute top-1.5 left-1.5">
                                         <span class="bg-black/60 backdrop-blur text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-white/10" x-text="item.totalEps + ' Eps'"></span>
                                     </div>
+
                                     <div class="absolute bottom-0 w-full p-3">
                                         <h3 class="text-[10px] font-bold text-white leading-tight line-clamp-2 mb-1" x-text="item.title"></h3>
                                         <p class="text-[8px] text-slate-400 truncate" x-text="item.genre"></p>
@@ -162,7 +162,9 @@ HTML_TEMPLATE = """
                         </template>
                     </div>
                     <div class="text-center mt-8" x-show="latestHasMore">
-                        <button @click="loadMoreLatest()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-8 rounded-full transition">MUAT LAGI</button>
+                        <button @click="loadMoreLatest()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-8 rounded-full transition">
+                            MUAT LAGI
+                        </button>
                     </div>
                 </section>
             </div>
@@ -170,27 +172,27 @@ HTML_TEMPLATE = """
 
         <template x-if="view === 'search'">
             <div class="animate-enter">
-                <button @click="view = 'home'" class="mb-6 text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-left"></i> BERANDA
+                <button @click="view = 'home'" class="mb-6 text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2 transition group">
+                    <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-blue-600"><i class="fa-solid fa-arrow-left"></i></div> KEMBALI
                 </button>
-                <h2 class="text-lg font-black mb-6 uppercase flex items-center gap-2">
+                <h2 class="text-xl font-black mb-6 uppercase text-white flex items-center gap-2">
                     <i class="fa-solid fa-magnifying-glass text-blue-500"></i> HASIL: <span class="text-blue-400" x-text="searchQuery"></span>
                 </h2>
                 
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
                     <template x-for="item in searchList" :key="item.id">
                         <div class="group relative bg-[#0f172a] rounded-xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-500 transition">
                             <div @click="openDetail(item.id)" class="relative aspect-[3/4.5]">
                                 <img :src="item.cover" class="w-full h-full object-cover">
                                 <div class="absolute inset-0 card-gradient"></div>
+                                
                                 <div class="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
                                     <template x-if="item.is18"><span class="bg-red-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">18+</span></template>
-                                    <template x-if="item.isFinished"><span class="bg-green-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">TAMAT</span></template>
-                                    <template x-if="!item.isFinished"><span class="bg-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">ONGOING</span></template>
                                 </div>
                                 <div class="absolute top-1.5 left-1.5">
                                     <span class="bg-black/60 backdrop-blur text-white text-[8px] font-bold px-1.5 py-0.5 rounded border border-white/10" x-text="item.totalEps + ' Eps'"></span>
                                 </div>
+
                                 <div class="absolute bottom-0 w-full p-3">
                                     <h3 class="text-[10px] font-bold text-white leading-tight line-clamp-2" x-text="item.title"></h3>
                                 </div>
@@ -199,7 +201,7 @@ HTML_TEMPLATE = """
                     </template>
                 </div>
                 <div class="text-center mt-8" x-show="searchHasMore">
-                    <button @click="loadMoreSearch()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-2.5 px-8 rounded-full transition">MUAT LEBIH BANYAK</button>
+                    <button @click="loadMoreSearch()" class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold py-3 px-8 rounded-full transition">MUAT LEBIH BANYAK</button>
                 </div>
             </div>
         </template>
@@ -243,7 +245,7 @@ HTML_TEMPLATE = """
                     <button @click="view = 'home'" class="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> KEMBALI
                     </button>
-                    <button @click="toggleFavorite({id: activeDrama.series_id_str, title: activeDrama.series_title, cover: activeDrama.series_cover, totalEps: activeDrama.episode_cnt, isFinished: activeDrama.series_status===1, is18: activeDrama.age_gate_info?.age_gate>=18, genre: 'Drama'})" 
+                    <button @click="toggleFavorite({id: activeDrama.series_id_str, title: activeDrama.series_title, cover: activeDrama.series_cover, totalEps: activeDrama.episode_cnt, is18: activeDrama.age_gate_info?.age_gate>=18, genre: 'Drama'})" 
                             class="bg-slate-800 px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-2 hover:bg-slate-700">
                         <i :class="isFavorite(activeDrama.series_id_str) ? 'fa-solid text-pink-500' : 'fa-regular text-slate-400'" class="fa-heart"></i>
                         <span x-text="isFavorite(activeDrama.series_id_str) ? 'Tersimpan' : 'Simpan'"></span>
@@ -256,7 +258,7 @@ HTML_TEMPLATE = """
                         <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/90 to-transparent"></div>
                     </div>
 
-                    <div class="relative z-10 p-6 flex flex-col md:flex-row gap-6 items-start">
+                    <div class="relative z-10 p-6 md:p-8 flex flex-col md:flex-row gap-8 items-start">
                         <div class="w-40 md:w-56 flex-shrink-0 mx-auto md:mx-0 shadow-2xl rounded-xl overflow-hidden border border-white/10">
                             <img :src="activeDrama.series_cover" class="w-full h-full object-cover">
                         </div>
@@ -264,10 +266,16 @@ HTML_TEMPLATE = """
                         <div class="flex-1 w-full text-center md:text-left">
                             <h1 class="text-2xl md:text-4xl font-black text-white mb-4 leading-tight drop-shadow-lg" x-text="activeDrama.series_title"></h1>
                             
-                            <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                                <span class="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg" x-text="activeDrama.episode_cnt + ' Eps'"></span>
+                            <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
+                                <span class="bg-blue-600/90 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg" x-text="activeDrama.episode_cnt + ' Episodes'"></span>
                                 <span x-show="activeDrama.age_gate_info?.age_gate >= 18" class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">18+</span>
                                 <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-3 py-1 rounded-full border border-white/10" x-text="formatNumber(activeDrama.followed_cnt) + ' Pengikut'"></span>
+                            </div>
+
+                            <div class="flex flex-wrap justify-center md:justify-start gap-1.5 mb-6">
+                                <template x-for="cat in parseTags(activeDrama.category_schema)" :key="cat.category_id">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800/50 text-slate-300 border border-slate-700" x-text="cat.name"></span>
+                                </template>
                             </div>
 
                             <div class="bg-black/20 p-4 rounded-xl border border-white/5 mb-6 text-left backdrop-blur-sm">
@@ -281,7 +289,7 @@ HTML_TEMPLATE = """
                             </div>
 
                             <h3 class="text-xs font-black text-slate-500 uppercase mb-4 tracking-widest flex items-center justify-center md:justify-start gap-2">
-                                <span class="w-6 h-[2px] bg-blue-600"></span> EPISODE LIST
+                                <span class="w-6 h-[2px] bg-blue-600"></span> PILIH EPISODE
                             </h3>
                             <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-80 overflow-y-auto pr-1">
                                 <template x-for="(eps, index) in activeDrama.video_list" :key="eps.vid">
@@ -299,14 +307,32 @@ HTML_TEMPLATE = """
         </template>
 
         <template x-if="view === 'player'">
-            <div class="fixed inset-0 bg-black z-[9999] flex flex-col justify-center items-center group">
-                <div class="absolute top-0 w-full p-4 flex justify-between z-20 bg-gradient-to-b from-black/90 to-transparent pointer-events-none">
-                    <button @click="view = 'detail'" class="pointer-events-auto bg-white/10 backdrop-blur px-5 py-2 rounded-full text-[10px] font-bold text-white border border-white/10 hover:bg-red-600 hover:border-red-500 transition shadow-lg flex items-center gap-2">
+            <div class="fixed inset-0 bg-black z-[9999] flex flex-col justify-center items-center select-none"
+                 x-data="{ 
+                    showControls: true, 
+                    timer: null,
+                    toggleControls() {
+                        this.showControls = !this.showControls;
+                        if(this.showControls) this.resetTimer();
+                    },
+                    resetTimer() {
+                        clearTimeout(this.timer);
+                        this.timer = setTimeout(() => this.showControls = false, 4000);
+                    }
+                 }"
+                 x-init="resetTimer()"
+                 @click="toggleControls()">
+                
+                <div class="absolute top-0 w-full p-4 flex justify-between z-20 bg-gradient-to-b from-black/90 to-transparent fade-transition"
+                     :class="showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'">
+                    
+                    <button @click.stop="view = 'detail'" class="bg-white/10 backdrop-blur px-5 py-2 rounded-full text-[10px] font-bold text-white border border-white/10 hover:bg-red-600 hover:border-red-500 transition shadow-lg flex items-center gap-2 pointer-events-auto">
                         <i class="fa-solid fa-xmark"></i> TUTUP
                     </button>
-                    <div class="text-right pointer-events-auto">
+                    
+                    <div class="text-right">
                         <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest max-w-[150px] truncate" x-text="activeDrama.series_title"></p>
-                        <p class="text-sm font-black text-blue-500 shadow-black drop-shadow-md" x-text="'EPS ' + activeDrama.video_list[currentIdx].vid_index"></p>
+                        <p class="text-sm font-black text-blue-500 shadow-black drop-shadow-md" x-text="'EPISODE ' + activeDrama.video_list[currentIdx].vid_index"></p>
                     </div>
                 </div>
                 
@@ -314,12 +340,17 @@ HTML_TEMPLATE = """
                     <video x-ref="vPlayer" :src="streamUrl" @ended="nextEps" @error="handleError" autoplay controls playsinline class="w-full h-full object-contain"></video>
                 </div>
 
-                <div class="absolute bottom-16 w-full px-4 md:px-12 flex justify-between items-center z-20 pointer-events-none">
-                    <button @click="prevEps()" :disabled="currentIdx === 0" class="pointer-events-auto bg-slate-800/80 backdrop-blur hover:bg-slate-700 px-6 py-3 rounded-full font-bold text-[10px] disabled:opacity-0 border border-slate-600 text-white transition flex items-center gap-2 shadow-xl">
-                        <i class="fa-solid fa-backward"></i> PREV
+                <div class="absolute bottom-16 w-full p-6 flex gap-4 bg-gradient-to-t from-black via-black/90 to-transparent z-20 pb-10 fade-transition"
+                     :class="showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'">
+                    
+                    <button @click.stop="prevEps()" :disabled="currentIdx === 0" 
+                            class="pointer-events-auto flex-1 bg-slate-800/80 backdrop-blur hover:bg-slate-700 py-4 rounded-2xl font-bold text-[10px] disabled:opacity-30 border border-slate-600 text-white transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-backward"></i> SEBELUMNYA
                     </button>
-                    <button @click="nextEps()" :disabled="currentIdx === activeDrama.video_list.length-1" class="pointer-events-auto bg-blue-600/90 backdrop-blur hover:bg-blue-500 px-6 py-3 rounded-full font-bold text-[10px] disabled:opacity-0 text-white shadow-xl shadow-blue-600/20 transition flex items-center gap-2">
-                        NEXT <i class="fa-solid fa-forward"></i>
+                    
+                    <button @click.stop="nextEps()" :disabled="currentIdx === activeDrama.video_list.length-1" 
+                            class="pointer-events-auto flex-[2] bg-blue-600/90 backdrop-blur hover:bg-blue-500 py-4 rounded-2xl font-bold text-[10px] disabled:opacity-30 text-white shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2">
+                        EPISODE LANJUT <i class="fa-solid fa-forward"></i>
                     </button>
                 </div>
             </div>
@@ -364,7 +395,6 @@ HTML_TEMPLATE = """
                             cover: item.cover || item.thumb_url,
                             genre: item.genre || 'Drama',
                             totalEps: item.totalEps || '?',
-                            isFinished: item.isFinished,
                             is18: item.is18
                         };
                         this.favorites.unshift(favItem);
@@ -373,25 +403,21 @@ HTML_TEMPLATE = """
                     localStorage.setItem('albedo_fav', JSON.stringify(this.favorites));
                 },
 
-                // NORMALIZATION - BADGE LOGIC FIX
                 normalize(raw, type) {
-                    let id, title, cover, totalEps, isFinished, is18, genre;
+                    let id, title, cover, totalEps, is18, genre;
                     if (type === 'search') {
                         const book = raw.books[0]; 
                         id = raw.id; title = book.book_name; cover = book.thumb_url;
                         totalEps = book.serial_count || '?';
-                        // Logic untuk Search
-                        isFinished = book.show_creation_status === 'Selesai' || (book.stat_infos && book.stat_infos.includes('Selesai'));
                         is18 = book.visibility_age_gate === '18';
                         genre = book.stat_infos ? book.stat_infos[0] : 'Drama';
                     } else {
                         id = raw.book_id; title = raw.book_name; cover = raw.thumb_url;
                         totalEps = raw.serial_count;
-                        isFinished = raw.show_creation_status === 'Selesai';
                         is18 = raw.visibility_age_gate === '18';
                         genre = raw.stat_infos ? raw.stat_infos[0] : 'Drama';
                     }
-                    return { id, title, cover, totalEps, isFinished, is18, genre };
+                    return { id, title, cover, totalEps, is18, genre };
                 },
 
                 appendData(targetList, newItems) {
@@ -404,7 +430,6 @@ HTML_TEMPLATE = """
                     const res = await fetch(`/api/trending?offset=${this.trendingOffset}`);
                     const json = await res.json();
                     const newItems = json.books.map(b => this.normalize(b, 'home'));
-                    
                     const unique = newItems.filter(i => !this.trendingIds.has(i.id));
                     if(unique.length === 0 && this.trending.length > 0) this.trendingHasMore = false;
                     else {
@@ -419,7 +444,6 @@ HTML_TEMPLATE = """
                     const res = await fetch(`/api/latest?offset=${this.latestOffset}`);
                     const json = await res.json();
                     const newItems = json.books.map(b => this.normalize(b, 'home'));
-                    
                     const unique = newItems.filter(i => !this.latestIds.has(i.id));
                     if(unique.length === 0 && this.latest.length > 0) this.latestHasMore = false;
                     else {
@@ -439,7 +463,6 @@ HTML_TEMPLATE = """
                         const json = await res.json();
                         if(json.data && json.data.search_data) {
                             const newItems = json.data.search_data.map(b => this.normalize(b, 'search'));
-                            
                             const unique = newItems.filter(i => !this.searchIds.has(i.id));
                             if(unique.length === 0 && this.searchList.length > 0) this.searchHasMore = false;
                             else {

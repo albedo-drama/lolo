@@ -4,7 +4,7 @@ import httpx
 
 app = FastAPI()
 
-# KONFIGURASI API & HEADERS
+# API Base URL
 API_BASE = "https://api.sansekai.my.id/api/melolo"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36",
@@ -24,9 +24,8 @@ HTML_TEMPLATE = """
     <style>
         [x-cloak] { display: none !important; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        video::-webkit-media-controls { display:none !important; } /* Custom UI */
         .text-shadow { text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        video::-webkit-media-controls { display:none !important; }
     </style>
 </head>
 <body class="bg-[#050505] text-gray-200 font-sans" x-data="albedoApp()" x-init="init()">
@@ -38,8 +37,8 @@ HTML_TEMPLATE = """
             </h1>
             <div class="relative w-2/3 md:w-1/3">
                 <input type="text" x-model="searchQuery" @keyup.enter="doSearch(true)" placeholder="Cari Judul..." 
-                       class="w-full bg-[#1c1f26] border border-gray-700 rounded-full py-2 px-4 text-xs focus:border-blue-500 outline-none text-white transition shadow-inner">
-                <i @click="doSearch(true)" class="fa-solid fa-magnifying-glass absolute right-4 top-2.5 text-gray-500 text-xs cursor-pointer hover:text-white"></i>
+                       class="w-full bg-[#1c1f26] border border-gray-700 rounded-full py-2 px-4 text-xs focus:border-blue-500 outline-none text-white transition">
+                <i @click="doSearch(true)" class="fa-solid fa-magnifying-glass absolute right-4 top-2.5 text-gray-500 text-xs text-white"></i>
             </div>
         </div>
     </nav>
@@ -54,27 +53,13 @@ HTML_TEMPLATE = """
         <template x-if="view === 'home'">
             <div class="space-y-10 animate-fade-in">
                 
-                <template x-if="trending.length > 0">
-                    <div class="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden shadow-2xl cursor-pointer group" @click="openDetail(trending[0].id)">
-                        <img :src="trending[0].cover" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition duration-700">
-                        <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent"></div>
-                        <div class="absolute bottom-0 left-0 p-6 md:p-10 max-w-2xl">
-                            <span class="bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full mb-3 inline-block shadow">🔥 #1 TRENDING</span>
-                            <h2 class="text-2xl md:text-5xl font-black text-white mb-2 leading-tight text-shadow" x-text="trending[0].title"></h2>
-                            <button class="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-full text-xs shadow-lg shadow-blue-600/40 transition">
-                                <i class="fa-solid fa-play mr-2"></i> TONTON SEKARANG
-                            </button>
-                        </div>
-                    </div>
-                </template>
-
                 <section>
                     <div class="flex items-center justify-between mb-4 border-l-4 border-orange-500 pl-3">
                         <h2 class="text-lg font-black text-white italic tracking-wider">TRENDING HOT</h2>
                     </div>
                     <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                        <template x-for="(item, idx) in trending" :key="item.id">
-                            <div x-show="idx > 0" @click="openDetail(item.id)" class="group relative bg-[#15171c] rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-orange-500 transition duration-300">
+                        <template x-for="item in trending" :key="item.id">
+                            <div @click="openDetail(item.id)" class="group relative bg-[#15171c] rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-orange-500 transition">
                                 <div class="relative aspect-[3/4.5]">
                                     <img :src="item.cover" class="w-full h-full object-cover">
                                     <div class="absolute top-1 right-1 flex flex-col items-end gap-1">
@@ -102,13 +87,12 @@ HTML_TEMPLATE = """
                     </div>
                     <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                         <template x-for="item in latest" :key="item.id">
-                            <div @click="openDetail(item.id)" class="group relative bg-[#15171c] rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-500 transition duration-300">
+                            <div @click="openDetail(item.id)" class="group relative bg-[#15171c] rounded-lg overflow-hidden cursor-pointer hover:ring-1 hover:ring-blue-500 transition">
                                 <div class="relative aspect-[3/4.5]">
                                     <img :src="item.cover" class="w-full h-full object-cover">
                                     <div class="absolute top-1 right-1 flex flex-col items-end gap-1">
                                         <template x-if="item.is18"><span class="bg-red-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">18+</span></template>
                                         <template x-if="item.isFinished"><span class="bg-green-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">TAMAT</span></template>
-                                        <template x-if="!item.isFinished"><span class="bg-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">ONGOING</span></template>
                                     </div>
                                     <div class="absolute top-1 left-1">
                                         <span class="bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur border border-white/10" x-text="item.totalEps + ' Eps'"></span>
@@ -142,7 +126,6 @@ HTML_TEMPLATE = """
                                 <div class="absolute top-1 right-1 flex flex-col items-end gap-1">
                                     <template x-if="item.is18"><span class="bg-red-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">18+</span></template>
                                     <template x-if="item.isFinished"><span class="bg-green-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">TAMAT</span></template>
-                                    <template x-if="!item.isFinished"><span class="bg-blue-600 text-[8px] font-black px-1.5 py-0.5 rounded text-white shadow-md">ONGOING</span></template>
                                 </div>
                                 <div class="absolute top-1 left-1">
                                     <span class="bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur border border-white/10" x-text="item.totalEps + ' Eps'"></span>
@@ -261,14 +244,13 @@ HTML_TEMPLATE = """
                     this.loading = false;
                 },
 
-                // 1. NORMALIZE DATA (Anti-Pusing)
+                // 1. NORMALIZE DATA
                 normalize(raw, type) {
                     let id, title, cover, totalEps, isFinished, is18;
                     if (type === 'search') {
                         const book = raw.books[0]; 
                         id = raw.id; title = book.book_name; cover = book.thumb_url;
                         totalEps = book.serial_count || '?';
-                        // Logic Badges Search
                         isFinished = book.show_creation_status === 'Selesai' || (book.stat_infos && book.stat_infos.includes('Selesai'));
                         is18 = book.visibility_age_gate === '18';
                     } else {
@@ -280,14 +262,14 @@ HTML_TEMPLATE = """
                     return { id, title, cover, totalEps, isFinished, is18 };
                 },
 
-                // 2. ADD TO LIST (Anti-Duplikat)
+                // 2. ANTI DUPLICATE LOGIC
                 appendData(targetList, newItems) {
                     const existingIds = new Set(targetList.map(i => i.id));
                     const uniqueItems = newItems.filter(i => !existingIds.has(i.id));
                     return [...targetList, ...uniqueItems];
                 },
 
-                // 3. FETCH FUNCTIONS
+                // 3. FETCH DATA (NO LIMIT/GENDER PARAMS - PURE OFFSET)
                 async loadTrend() {
                     const res = await fetch(`/api/trending?offset=${this.trendingOffset}`);
                     const json = await res.json();
@@ -328,7 +310,7 @@ HTML_TEMPLATE = """
 
                 resetHome() { this.searchQuery = ''; this.view = 'home'; },
                 
-                // 4. DETAIL & PLAYER
+                // DETAIL & PLAYER
                 async openDetail(id) {
                     this.loading = true;
                     try {
@@ -357,8 +339,6 @@ HTML_TEMPLATE = """
                 handleError() { if(this.streamUrl !== this.backupUrl && this.backupUrl) this.streamUrl = this.backupUrl; },
                 nextEps() { if(this.currentIdx < this.activeDrama.video_list.length-1) this.openPlayer(this.currentIdx+1); },
                 prevEps() { if(this.currentIdx > 0) this.openPlayer(this.currentIdx-1); },
-                
-                // UTILS
                 formatNumber(num) { return new Intl.NumberFormat('id-ID', { notation: "compact" }).format(num); },
                 formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; },
                 parseTags(str) { try { return JSON.parse(str); } catch { return []; } }
@@ -369,24 +349,26 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- BACKEND (API PROXY) ---
+# --- BACKEND FASTAPI (PARAMETER DIBERSIHKAN) ---
 @app.get("/", response_class=HTMLResponse)
 async def root(): return HTML_TEMPLATE
 
 @app.get("/api/latest")
 async def latest(offset: int = 0):
     async with httpx.AsyncClient() as client:
-        # Kirim limit=10 & gender=1 (Param Wajib Melolo)
-        return (await client.get(f"{API_BASE}/latest?offset={offset}&limit=10&gender=1", headers=HEADERS)).json()
+        # HANYA MENGIRIM OFFSET (TANPA LIMIT/GENDER)
+        return (await client.get(f"{API_BASE}/latest?offset={offset}", headers=HEADERS)).json()
 
 @app.get("/api/trending")
 async def trending(offset: int = 0):
     async with httpx.AsyncClient() as client:
-        return (await client.get(f"{API_BASE}/trending?offset={offset}&limit=10&gender=1", headers=HEADERS)).json()
+        # HANYA MENGIRIM OFFSET
+        return (await client.get(f"{API_BASE}/trending?offset={offset}", headers=HEADERS)).json()
 
 @app.get("/api/search")
 async def search(q: str, offset: int = 0):
     async with httpx.AsyncClient() as client:
+        # Search memang butuh limit, ini aman
         return (await client.get(f"{API_BASE}/search?query={q}&limit=10&offset={offset}", headers=HEADERS)).json()
 
 @app.get("/api/detail")
